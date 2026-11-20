@@ -1,0 +1,262 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B1000000000000000000001 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001 /* AppModel.swift */; };
+		B1001000000000000000001 /* BrowserDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1001000000000000000001 /* BrowserDetector.swift */; };
+		B1002000000000000000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1002000000000000000001 /* ContentView.swift */; };
+		B1003000000000000000001 /* EdgeProfileDockApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1003000000000000000001 /* EdgeProfileDockApp.swift */; };
+		B1004000000000000000001 /* LauncherBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1004000000000000000001 /* LauncherBuilder.swift */; };
+		B1005000000000000000001 /* ManifestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1005000000000000000001 /* ManifestStore.swift */; };
+		B1006000000000000000001 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1006000000000000000001 /* Models.swift */; };
+		B1007000000000000000001 /* ProfileReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1007000000000000000001 /* ProfileReader.swift */; };
+		B1008000000000000000001 /* UninstallService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1008000000000000000001 /* UninstallService.swift */; };
+		B1009000000000000000001 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = A1009000000000000000001 /* AppIcon.icns */; };
+		B1010000000000000000001 /* EdgeWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1010000000000000000001 /* EdgeWindows.swift */; };
+		B1011000000000000000001 /* ProfileWindowMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1011000000000000000001 /* ProfileWindowMonitor.swift */; };
+		B1012000000000000000001 /* ProfileArtwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1012000000000000000001 /* ProfileArtwork.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A1000000000000000000001 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		A1001000000000000000001 /* BrowserDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserDetector.swift; sourceTree = "<group>"; };
+		A1002000000000000000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1003000000000000000001 /* EdgeProfileDockApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeProfileDockApp.swift; sourceTree = "<group>"; };
+		A1004000000000000000001 /* LauncherBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherBuilder.swift; sourceTree = "<group>"; };
+		A1005000000000000000001 /* ManifestStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestStore.swift; sourceTree = "<group>"; };
+		A1006000000000000000001 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A1007000000000000000001 /* ProfileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileReader.swift; sourceTree = "<group>"; };
+		A1008000000000000000001 /* UninstallService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallService.swift; sourceTree = "<group>"; };
+		A1009000000000000000001 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		A1010000000000000000001 /* EdgeWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeWindows.swift; sourceTree = "<group>"; };
+		A1011000000000000000001 /* ProfileWindowMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileWindowMonitor.swift; sourceTree = "<group>"; };
+		A1012000000000000000001 /* ProfileArtwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileArtwork.swift; sourceTree = "<group>"; };
+		C1000000000000000000016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C1000000000000000000006 /* EdgeProfileDock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EdgeProfileDock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C1000000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C1000000000000000000007 = {
+			isa = PBXGroup;
+			children = (
+				C1000000000000000000008 /* EdgeProfileDock */,
+				C1000000000000000000009 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C1000000000000000000008 /* EdgeProfileDock */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000001 /* AppModel.swift */,
+				A1001000000000000000001 /* BrowserDetector.swift */,
+				A1002000000000000000001 /* ContentView.swift */,
+				A1003000000000000000001 /* EdgeProfileDockApp.swift */,
+				A1004000000000000000001 /* LauncherBuilder.swift */,
+				A1005000000000000000001 /* ManifestStore.swift */,
+				A1006000000000000000001 /* Models.swift */,
+				A1007000000000000000001 /* ProfileReader.swift */,
+				A1008000000000000000001 /* UninstallService.swift */,
+				A1009000000000000000001 /* AppIcon.icns */,
+				A1010000000000000000001 /* EdgeWindows.swift */,
+				A1011000000000000000001 /* ProfileWindowMonitor.swift */,
+				A1012000000000000000001 /* ProfileArtwork.swift */,
+				C1000000000000000000016 /* Info.plist */,
+			);
+			path = EdgeProfileDock;
+			sourceTree = "<group>";
+		};
+		C1000000000000000000009 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C1000000000000000000006 /* EdgeProfileDock.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C1000000000000000000002 /* EdgeProfileDock */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1000000000000000000011 /* Build configuration list for PBXNativeTarget "EdgeProfileDock" */;
+			buildPhases = (
+				C1000000000000000000003 /* Sources */,
+				C1000000000000000000004 /* Frameworks */,
+				C1000000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EdgeProfileDock;
+			productName = EdgeProfileDock;
+			productReference = C1000000000000000000006 /* EdgeProfileDock.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C1000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = C1000000000000000000010 /* Build configuration list for PBXProject "EdgeProfileDock" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = C1000000000000000000007;
+			productRefGroup = C1000000000000000000009 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C1000000000000000000002 /* EdgeProfileDock */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1000000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1009000000000000000001 /* AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C1000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000000000000000000001 /* AppModel.swift in Sources */,
+				B1001000000000000000001 /* BrowserDetector.swift in Sources */,
+				B1002000000000000000001 /* ContentView.swift in Sources */,
+				B1003000000000000000001 /* EdgeProfileDockApp.swift in Sources */,
+				B1004000000000000000001 /* LauncherBuilder.swift in Sources */,
+				B1005000000000000000001 /* ManifestStore.swift in Sources */,
+				B1006000000000000000001 /* Models.swift in Sources */,
+				B1007000000000000000001 /* ProfileReader.swift in Sources */,
+				B1008000000000000000001 /* UninstallService.swift in Sources */,
+				B1010000000000000000001 /* EdgeWindows.swift in Sources */,
+				B1011000000000000000001 /* ProfileWindowMonitor.swift in Sources */,
+				B1012000000000000000001 /* ProfileArtwork.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C1000000000000000000012 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C1000000000000000000013 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C1000000000000000000014 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EdgeProfileDock/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.EdgeProfileDock;
+				PRODUCT_NAME = EdgeProfileDock;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		C1000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EdgeProfileDock/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.local.EdgeProfileDock;
+				PRODUCT_NAME = EdgeProfileDock;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C1000000000000000000010 /* Build configuration list for PBXProject "EdgeProfileDock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1000000000000000000012 /* Debug */,
+				C1000000000000000000013 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C1000000000000000000011 /* Build configuration list for PBXNativeTarget "EdgeProfileDock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1000000000000000000014 /* Debug */,
+				C1000000000000000000015 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C1000000000000000000001 /* Project object */;
+}
