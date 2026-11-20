@@ -1,8 +1,10 @@
 import AppKit
 import Foundation
 
+@MainActor
 final class StubApp: NSObject, NSApplicationDelegate {
     private var managerExit: DispatchSourceProcess?
+    private var replyTimeout: DispatchWorkItem?
     private var browser: EdgeBrowser {
         EdgeBrowser(rawValue: Bundle.main.object(forInfoDictionaryKey: "EPDBrowser") as? String ?? "") ?? .edge
     }
@@ -21,14 +23,12 @@ final class StubApp: NSObject, NSApplicationDelegate {
             return
         }
 
-        defer { NSApp.terminate(nil) }
-        let profileDirectory = Bundle.main.object(forInfoDictionaryKey: "EPDProfileDirectory") as? String ?? "Default"
-        openProfile(profileDirectory)
+        openProfile()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         guard managerExit != nil, let identifier = Bundle.main.bundleIdentifier else { return false }
-        if let application = NSRunningApplication.runningApplications(withBundleIdentifier: browser.bundleIdentifier).first {
+        if let application = runningBrowser {
             NSApp.yieldActivation(to: application)
         }
         DistributedNotificationCenter.default().postNotificationName(
@@ -49,30 +49,91 @@ final class StubApp: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func openProfile(_ profileDirectory: String) {
-        let executable = URL(fileURLWithPath: browser.executablePath)
-        guard FileManager.default.isExecutableFile(atPath: executable.path) else {
-            presentError("未找到 \(browser.displayName)", "请先安装对应的浏览器。")
+    private var runningBrowser: NSRunningApplication? {
+        NSRunningApplication.runningApplications(withBundleIdentifier: browser.bundleIdentifier)
+            .first(where: { !$0.isTerminated })
+    }
+
+    private func openProfile() {
+        guard let application = runningBrowser else {
+            launchBrowser()
+            return
+        }
+        guard let identifier = Bundle.main.bundleIdentifier,
+              NSRunningApplication.runningApplications(withBundleIdentifier: WindowDock.managerBundleIdentifier)
+                  .contains(where: { !$0.isTerminated }) else {
+            finishOpen(error: "请先打开 EdgeProfileDock，或使用浏览器的「个人资料」菜单。")
             return
         }
 
-        // Edge 会把参数交给正在运行的实例。提供新标签页作为后备，已有窗口可以接收它。
-        // --focus 优先复用目标资料已有的新标签页。
-        let newTab = "edge://newtab/"
-        let process = Process()
-        process.executableURL = executable
-        process.arguments = [
-            "--profile-directory=\(profileDirectory)",
-            "--focus=\(newTab),chrome://newtab/",
-            newTab
-        ]
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        do {
-            try process.run()
-        } catch {
-            presentError("无法打开 \(browser.displayName)", error.localizedDescription)
+        let token = UUID().uuidString
+        let center = DistributedNotificationCenter.default()
+        center.addObserver(
+            self, selector: #selector(openReply(_:)), name: WindowDock.openProfileReply,
+            object: token, suspensionBehavior: .deliverImmediately
+        )
+        let timeout = DispatchWorkItem { [weak self] in
+            self?.finishOpen(error: "EdgeProfileDock 未响应。请确认管理工具和启动器都已更新，再试一次。")
         }
+        replyTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: timeout)
+        NSApp.yieldActivation(to: application)
+        center.postNotificationName(
+            WindowDock.openProfileNotification, object: identifier,
+            userInfo: ["request": token, "pid": ProcessInfo.processInfo.processIdentifier], deliverImmediately: true
+        )
+    }
+
+    @objc private func openReply(_ notification: Notification) {
+        guard let value = notification.userInfo?["result"] as? String,
+              let result = WindowDock.OpenResult(rawValue: value) else { return }
+        switch result {
+        case .handled:
+            finishOpen()
+        case .browserClosed:
+            if runningBrowser == nil {
+                stopWaitingForReply()
+                launchBrowser()
+            } else {
+                finishOpen(error: "浏览器正在启动，请稍后再试。")
+            }
+        case .accessibilityRequired:
+            finishOpen(error: "请在系统设置中为 EdgeProfileDock 开启辅助功能权限，再试一次。")
+        case .unavailable:
+            finishOpen(error: "无法确认资料窗口。请刷新 EdgeProfileDock 中的资料，或使用浏览器的「个人资料」菜单。")
+        }
+    }
+
+    private func launchBrowser() {
+        guard FileManager.default.isExecutableFile(atPath: browser.executablePath) else {
+            finishOpen(error: "请先安装 \(browser.displayName)。")
+            return
+        }
+        let directory = Bundle.main.object(forInfoDictionaryKey: "EPDProfileDirectory") as? String ?? "Default"
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.arguments = ["--profile-directory=\(directory)"]
+        configuration.createsNewApplicationInstance = false
+        configuration.addsToRecentItems = false
+        configuration.promptsUserIfNeeded = false
+        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: browser.appPath), configuration: configuration) { [weak self] app, error in
+            DispatchQueue.main.async {
+                self?.finishOpen(error: error?.localizedDescription ?? (app == nil ? "没有收到浏览器启动结果。" : nil))
+            }
+        }
+    }
+
+    private func stopWaitingForReply() {
+        replyTimeout?.cancel()
+        replyTimeout = nil
+        DistributedNotificationCenter.default().removeObserver(self, name: WindowDock.openProfileReply, object: nil)
+    }
+
+    private func finishOpen(error: String? = nil) {
+        stopWaitingForReply()
+        if let error {
+            presentError("无法打开资料", error)
+        }
+        NSApp.terminate(nil)
     }
 
     private func presentError(_ title: String, _ message: String) {
@@ -83,8 +144,10 @@ final class StubApp: NSObject, NSApplicationDelegate {
     }
 }
 
-let app = NSApplication.shared
-let delegate = StubApp()
-app.delegate = delegate
-app.setActivationPolicy(.accessory)
-app.run()
+MainActor.assumeIsolated {
+    let app = NSApplication.shared
+    let delegate = StubApp()
+    app.delegate = delegate
+    app.setActivationPolicy(.accessory)
+    withExtendedLifetime(delegate) { app.run() }
+}

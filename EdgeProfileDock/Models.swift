@@ -77,4 +77,13 @@ enum WindowDock {
     static let monitorArgument = "--edge-profile-dock-monitor"
     static let managerBundleIdentifier = "com.local.EdgeProfileDock"
     static let focusNotification = Notification.Name("com.local.EdgeProfileDock.focusWindow")
+    static let openProfileNotification = Notification.Name("com.local.EdgeProfileDock.openProfile")
+    static let openProfileReply = Notification.Name("com.local.EdgeProfileDock.openProfileReply")
+
+    enum OpenResult: String {
+        case handled
+        case browserClosed
+        case accessibilityRequired
+        case unavailable
+    }
 }

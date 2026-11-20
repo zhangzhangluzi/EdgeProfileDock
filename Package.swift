@@ -9,6 +9,7 @@ let package = Package(
             name: "EdgeProfileDock",
             path: "EdgeProfileDock",
             exclude: ["Info.plist", "AppIcon.icns"]
-        )
+        ),
+        .testTarget(name: "EdgeProfileDockTests", dependencies: ["EdgeProfileDock"])
     ]
 )

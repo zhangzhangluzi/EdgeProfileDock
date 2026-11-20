@@ -360,12 +360,6 @@ final class ManagerViewController: NSViewController, NSTableViewDataSource, NSTa
 
     @objc private func createLaunchers() {
         model.requestCreateSelected()
-        if model.showOverwriteConfirm {
-            confirm("发现同名启动器", message: "替换会把同名快捷方式改成当前所选资料。",
-                    buttons: ["替换", "取消"]) { [model] response in
-                if response == 0 { model.confirmOverwriteCreate() } else { model.cancelOverwriteCreate() }
-            }
-        }
     }
 
     @objc private func showClear() {

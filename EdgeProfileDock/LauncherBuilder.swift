@@ -65,18 +65,33 @@ enum LauncherBuilder {
         }
     }
 
-    static func launcherURL(for profile: EdgeProfile) -> URL {
-        let safe = sanitizeFileName(profile.displayName)
-        return applicationsDirectory.appendingPathComponent("Edge Profile - \(safe).app")
+    static func launcherURL(for profile: EdgeProfile, in directory: URL = applicationsDirectory) -> URL {
+        let fm = FileManager.default
+        let existing = (try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        if let owned = existing.sorted(by: { $0.path < $1.path }).first(where: { url in
+            guard let info = ownedLauncherInfo(at: url, in: directory) else { return false }
+            return belongsToProfile(info, profile: profile)
+        }) {
+            return directory.appendingPathComponent(owned.lastPathComponent)
+        }
+
+        let name = "Edge Profile - \(sanitizeFileName(profile.displayName))"
+        let preferred = directory.appendingPathComponent("\(name).app")
+        guard fm.fileExists(atPath: preferred.path) else { return preferred }
+
+        let suffix = "\(profile.browser.displayName) \(sanitizeFileName(profile.directory))"
+        var candidate = directory.appendingPathComponent("\(name) (\(suffix)).app")
+        var number = 2
+        while fm.fileExists(atPath: candidate.path) {
+            candidate = directory.appendingPathComponent("\(name) (\(suffix) \(number)).app")
+            number += 1
+        }
+        return candidate
     }
 
-    static func exists(for profile: EdgeProfile) -> Bool {
-        FileManager.default.fileExists(atPath: launcherURL(for: profile).path)
-    }
-
-    static func ownedLauncherInfo(at url: URL) -> NSDictionary? {
+    static func ownedLauncherInfo(at url: URL, in directory: URL = applicationsDirectory) -> NSDictionary? {
         guard url.pathExtension == "app",
-              url.deletingLastPathComponent().standardizedFileURL.path == applicationsDirectory.standardizedFileURL.path,
+              url.deletingLastPathComponent().standardizedFileURL.path == directory.standardizedFileURL.path,
               let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
               values.isDirectory == true, values.isSymbolicLink == false,
               let info = NSDictionary(contentsOf: url.appendingPathComponent("Contents/Info.plist")),
@@ -84,15 +99,14 @@ enum LauncherBuilder {
         return info
     }
 
-    static func ownsLauncher(for profile: EdgeProfile) -> Bool {
-        guard let info = ownedLauncherInfo(at: launcherURL(for: profile)) else { return false }
+    private static func belongsToProfile(_ info: NSDictionary, profile: EdgeProfile) -> Bool {
         return info["EPDBrowser"] as? String == profile.browser.rawValue
             && info["EPDProfileDirectory"] as? String == profile.directory
     }
 
     /// 创建独立资料入口，供快捷启动与窗口图标使用。
     @discardableResult
-    static func create(for profile: EdgeProfile, overwrite: Bool) throws -> CreatedLauncher {
+    static func create(for profile: EdgeProfile) throws -> CreatedLauncher {
         try ensureApplicationsDirectory()
         let fm = FileManager.default
         guard fm.fileExists(atPath: profile.browser.appPath) else {
@@ -103,10 +117,6 @@ enum LauncherBuilder {
         }
 
         let appURL = launcherURL(for: profile)
-        guard overwrite || !fm.fileExists(atPath: appURL.path) else {
-            throw LauncherBuilderError.writeFailed("启动器已存在。")
-        }
-
         let stagingDirectory = try fm.url(
             for: .itemReplacementDirectory,
             in: .userDomainMask,
@@ -126,7 +136,9 @@ enum LauncherBuilder {
         try fm.copyItem(at: stubSource, to: execURL)
         try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: execURL.path)
 
-        let display = "Edge Profile - \(sanitizeFileName(profile.displayName))"
+        let baseDisplay = "Edge Profile - \(sanitizeFileName(profile.displayName))"
+        let fileName = appURL.deletingPathExtension().lastPathComponent
+        let display = fileName.hasPrefix(baseDisplay + " (") ? fileName : baseDisplay
         let bundleID = bundleIdentifier(browser: profile.browser, directory: profile.directory)
         let usedAvatar = try ProfileArtwork.writeIcon(for: profile, to: resources.appendingPathComponent("AppIcon.icns"))
 
@@ -140,7 +152,7 @@ enum LauncherBuilder {
             "CFBundleName": display,
             "CFBundlePackageType": "APPL",
             "CFBundleShortVersionString": "1.0",
-            "CFBundleVersion": "5",
+            "CFBundleVersion": "6",
             "LSMinimumSystemVersion": "14.0",
             "LSUIElement": true,
             "NSHighResolutionCapable": true,
@@ -166,14 +178,13 @@ enum LauncherBuilder {
             task.waitUntilExit()
         }
 
-        if overwrite && fm.fileExists(atPath: appURL.path) {
-            if ownsLauncher(for: profile) {
-                // 保留外层 App 的文件标识，程序坞的固定引用才能继续指向它。
-                let installedContents = appURL.appendingPathComponent("Contents", isDirectory: true)
-                _ = try fm.replaceItemAt(installedContents, withItemAt: contents, options: .usingNewMetadataOnly)
-            } else {
-                _ = try fm.replaceItemAt(appURL, withItemAt: stagedApp, options: .usingNewMetadataOnly)
+        if fm.fileExists(atPath: appURL.path) {
+            guard let info = ownedLauncherInfo(at: appURL), belongsToProfile(info, profile: profile) else {
+                throw LauncherBuilderError.writeFailed("目标位置已被占用，请重试。")
             }
+            // 保留外层 App 的文件标识，程序坞的固定引用才能继续指向它。
+            let installedContents = appURL.appendingPathComponent("Contents", isDirectory: true)
+            _ = try fm.replaceItemAt(installedContents, withItemAt: contents, options: .usingNewMetadataOnly)
         } else {
             try fm.moveItem(at: stagedApp, to: appURL)
         }

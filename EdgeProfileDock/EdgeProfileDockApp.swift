@@ -24,7 +24,7 @@ final class EdgeProfileDockApp: NSObject, NSApplicationDelegate, NSMenuDelegate,
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
-            button.image = NSImage(systemSymbolName: "rectangle.on.rectangle", accessibilityDescription: "EdgeProfileDock")
+            button.image = Self.menuBarIcon()
             button.toolTip = "EdgeProfileDock"
             button.setAccessibilityLabel("EdgeProfileDock")
         }
@@ -35,6 +35,38 @@ final class EdgeProfileDockApp: NSObject, NSApplicationDelegate, NSMenuDelegate,
         statusItem = item
 
         showManager()
+    }
+
+    private static func menuBarIcon() -> NSImage {
+        let size = NSSize(width: 16, height: 16)
+        let icon = NSImage(size: size, flipped: false) { bounds in
+            NSGraphicsContext.saveGraphicsState()
+            defer { NSGraphicsContext.restoreGraphicsState() }
+            let transform = NSAffineTransform()
+            transform.translateX(by: bounds.minX, yBy: bounds.minY)
+            transform.scaleX(by: bounds.width / size.width, yBy: bounds.height / size.height)
+            transform.concat()
+
+            let mark = NSBezierPath()
+            mark.move(to: NSPoint(x: 11.5, y: 13))
+            mark.line(to: NSPoint(x: 3, y: 13))
+            mark.line(to: NSPoint(x: 3, y: 3))
+            mark.line(to: NSPoint(x: 11.5, y: 3))
+            mark.move(to: NSPoint(x: 3, y: 8))
+            mark.line(to: NSPoint(x: 13.5, y: 8))
+            mark.move(to: NSPoint(x: 11, y: 10.5))
+            mark.line(to: NSPoint(x: 13.5, y: 8))
+            mark.line(to: NSPoint(x: 11, y: 5.5))
+            mark.lineWidth = 2
+            mark.lineCapStyle = .round
+            mark.lineJoinStyle = .round
+            NSColor.black.setStroke()
+            mark.stroke()
+            return true
+        }
+        icon.isTemplate = true
+        icon.accessibilityDescription = "EdgeProfileDock"
+        return icon
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {

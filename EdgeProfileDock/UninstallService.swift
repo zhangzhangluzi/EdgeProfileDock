@@ -1,9 +1,24 @@
 import AppKit
 import Foundation
+import Security
 
 enum UninstallMode {
     case keepLaunchers
     case removeEverything
+}
+
+enum InstallError: LocalizedError {
+    case invalidSignature
+    case incompatibleSignature
+    case relaunchFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidSignature: return "新版应用的签名无效。"
+        case .incompatibleSignature: return "新版应用与已安装版本的签名身份不同。"
+        case .relaunchFailed: return "已安装应用，但无法安排重新打开，请从「应用程序」打开。"
+        }
+    }
 }
 
 enum UninstallService {
@@ -36,15 +51,79 @@ enum UninstallService {
         guard source.standardizedFileURL.path != destination.standardizedFileURL.path else {
             return destination
         }
-        if fm.fileExists(atPath: destination.path) {
-            try fm.removeItem(at: destination)
+        try installCopy(from: source, to: destination)
+        do {
+            try relaunchAfterExit(destination, waitingFor: ProcessInfo.processInfo.processIdentifier)
+        } catch {
+            throw InstallError.relaunchFailed
         }
-        try fm.copyItem(at: source, to: destination)
-        NSWorkspace.shared.open(destination)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        DispatchQueue.main.async {
             NSApp.terminate(nil)
         }
         return destination
+    }
+
+    @discardableResult
+    static func relaunchAfterExit(
+        _ destination: URL,
+        waitingFor pid: pid_t,
+        using opener: URL = URL(fileURLWithPath: "/usr/bin/open")
+    ) throws -> Process {
+        let helper = Process()
+        helper.executableURL = URL(fileURLWithPath: "/bin/sh")
+        helper.arguments = ["-c", """
+            attempt=0
+            while kill -0 "$1" 2>/dev/null; do
+                [ "$attempt" -lt 100 ] || exit 1
+                /bin/sleep 0.1
+                attempt=$((attempt + 1))
+            done
+            exec "$3" -a "$2"
+            """, "EdgeProfileDock", String(pid), destination.path, opener.path]
+        helper.standardInput = FileHandle.nullDevice
+        helper.standardOutput = FileHandle.nullDevice
+        helper.standardError = FileHandle.nullDevice
+        try helper.run()
+        return helper
+    }
+
+    static func installCopy(from source: URL, to destination: URL) throws {
+        let fm = FileManager.default
+        let stage = try fm.url(
+            for: .itemReplacementDirectory,
+            in: .userDomainMask,
+            appropriateFor: destination.deletingLastPathComponent(),
+            create: true
+        )
+        defer { try? fm.removeItem(at: stage) }
+        let candidate = stage.appendingPathComponent(destination.lastPathComponent)
+        try fm.copyItem(at: source, to: candidate)
+        guard Bundle(url: candidate)?.bundleIdentifier == WindowDock.managerBundleIdentifier else {
+            throw InstallError.invalidSignature
+        }
+
+        var candidateCode: SecStaticCode?
+        let flags = SecCSFlags(rawValue: kSecCSStrictValidate)
+        guard SecStaticCodeCreateWithPath(candidate as CFURL, [], &candidateCode) == errSecSuccess,
+              let candidateCode,
+              SecStaticCodeCheckValidity(candidateCode, flags, nil) == errSecSuccess else {
+            throw InstallError.invalidSignature
+        }
+
+        if fm.fileExists(atPath: destination.path) {
+            var installedCode: SecStaticCode?
+            var requirement: SecRequirement?
+            guard SecStaticCodeCreateWithPath(destination as CFURL, [], &installedCode) == errSecSuccess,
+                  let installedCode,
+                  SecCodeCopyDesignatedRequirement(installedCode, [], &requirement) == errSecSuccess,
+                  let requirement,
+                  SecStaticCodeCheckValidity(candidateCode, flags, requirement) == errSecSuccess else {
+                throw InstallError.incompatibleSignature
+            }
+            _ = try fm.replaceItemAt(destination, withItemAt: candidate, options: .usingNewMetadataOnly)
+        } else {
+            try fm.moveItem(at: candidate, to: destination)
+        }
     }
 
     static func performUninstall(mode: UninstallMode) throws {

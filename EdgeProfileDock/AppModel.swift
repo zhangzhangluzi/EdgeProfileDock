@@ -13,8 +13,6 @@ final class AppModel: ObservableObject {
     @Published var selectedLauncherIDs: Set<String> = []
     @Published var statusMessage: String?
     @Published var errorMessage: String?
-    @Published var showOverwriteConfirm = false
-    @Published var pendingCreateProfiles: [EdgeProfile] = []
     private var didBootstrap = false
 
     func bootstrap() {
@@ -80,39 +78,16 @@ final class AppModel: ObservableObject {
             errorMessage = "请先勾选要创建启动器的资料。"
             return
         }
-        let paths = chosen.map { LauncherBuilder.launcherURL(for: $0).path.precomposedStringWithCanonicalMapping.lowercased() }
-        guard Set(paths).count == paths.count else {
-            errorMessage = "所选资料会生成同名启动器，请分开选择或先在 Edge 中改名。"
-            return
-        }
-        let conflicts = chosen.filter { LauncherBuilder.exists(for: $0) && !LauncherBuilder.ownsLauncher(for: $0) }
-        if conflicts.isEmpty {
-            create(profiles: chosen, overwrite: false)
-        } else {
-            pendingCreateProfiles = chosen
-            showOverwriteConfirm = true
-        }
+        create(profiles: chosen)
     }
 
-    func confirmOverwriteCreate() {
-        create(profiles: pendingCreateProfiles, overwrite: true)
-        pendingCreateProfiles = []
-        showOverwriteConfirm = false
-    }
-
-    func cancelOverwriteCreate() {
-        pendingCreateProfiles = []
-        showOverwriteConfirm = false
-    }
-
-    private func create(profiles: [EdgeProfile], overwrite: Bool) {
+    private func create(profiles: [EdgeProfile]) {
         errorMessage = nil
         statusMessage = nil
         var saved: [CreatedLauncher] = []
         do {
             for profile in profiles {
-                let replace = overwrite || LauncherBuilder.ownsLauncher(for: profile)
-                saved.append(try LauncherBuilder.create(for: profile, overwrite: replace))
+                saved.append(try LauncherBuilder.create(for: profile))
                 selectedProfileIDs.remove(profile.id)
             }
         } catch {
@@ -154,7 +129,11 @@ final class AppModel: ObservableObject {
         do {
             _ = try UninstallService.moveToApplications()
         } catch {
-            errorMessage = "移动失败：\(error.localizedDescription)。请手动拖到「应用程序」文件夹。"
+            if error is InstallError {
+                errorMessage = error.localizedDescription
+            } else {
+                errorMessage = "移动失败：\(error.localizedDescription)。请手动拖到「应用程序」文件夹。"
+            }
         }
     }
 

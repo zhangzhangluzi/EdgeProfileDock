@@ -2,6 +2,12 @@ import AppKit
 import ApplicationServices
 
 final class EdgeWindows {
+    private struct ProfileStateStamp: Equatable {
+        let modified: Date
+        let size: UInt64
+        let fileNumber: UInt64
+    }
+
     private struct TrackedWindow {
         let element: AXUIElement
         var profileName: String?
@@ -17,6 +23,7 @@ final class EdgeWindows {
     private var observesCreation = false
     private var profiles: [EdgeProfile] = []
     private var windows: [TrackedWindow] = []
+    private var profileStateStamp: ProfileStateStamp?
 
     var observesWindowChanges: Bool {
         observesCreation && windows.allSatisfy(\.observesDestruction)
@@ -51,8 +58,20 @@ final class EdgeWindows {
         }
     }
 
-    func reloadProfiles() {
-        updateProfiles((try? ProfileReader.loadProfiles(for: browser)) ?? [])
+    func reloadProfiles(forceWindowNames: Bool = false) {
+        let before = currentProfileStateStamp()
+        guard let loaded = try? ProfileReader.loadProfiles(for: browser) else { return }
+        let after = currentProfileStateStamp()
+        if forceWindowNames || loaded.filter(\.isAvailable) != profiles { updateProfiles(loaded) }
+        profileStateStamp = before == after ? after : nil
+    }
+
+    private func currentProfileStateStamp() -> ProfileStateStamp? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: browser.localStateURL.path),
+              let modified = attributes[.modificationDate] as? Date,
+              let size = attributes[.size] as? NSNumber,
+              let fileNumber = attributes[.systemFileNumber] as? NSNumber else { return nil }
+        return ProfileStateStamp(modified: modified, size: size.uint64Value, fileNumber: fileNumber.uint64Value)
     }
 
     func updateProfiles(_ profiles: [EdgeProfile]) {
@@ -63,6 +82,9 @@ final class EdgeWindows {
     }
 
     func byProfileDirectory() -> [String: [AXUIElement]]? {
+        if let current = currentProfileStateStamp(), current != profileStateStamp {
+            reloadProfiles()
+        }
         startObserving()
         if !observesCreation {
             observesCreation = observe(kAXWindowCreatedNotification, on: element)
@@ -87,29 +109,48 @@ final class EdgeWindows {
         let profilesByName = Dictionary(grouping: profiles, by: \.displayName)
         var directories = profilesByName.compactMapValues { $0.count == 1 ? $0.first?.directory : nil }
         if windows.contains(where: { $0.profileName.map { profilesByName[$0] == nil } ?? false }),
-           let alias = profileMenuAlias() {
+           let alias = Self.profileMenuAlias(profileMenuItems().map(\.name), profiles: profiles) {
             directories[alias.name] = alias.directory
         }
         var result: [String: [AXUIElement]] = [:]
-        for window in windows {
+        for index in windows.indices {
+            let window = windows[index]
             if let directory = window.profileName.flatMap({ directories[$0] }) {
                 result[directory, default: []].append(window.element)
             } else {
                 needsFollowUp = true
+                windows[index].profileName = nil
             }
         }
         return result
     }
 
-    func focus(_ window: AXUIElement) {
+    @discardableResult
+    func focus(_ window: AXUIElement) -> Bool {
         if (attribute(window, kAXMinimizedAttribute) as Bool?) == true {
             AXUIElementSetAttributeValue(window, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
         }
-        guard AXUIElementPerformAction(window, kAXRaiseAction as CFString) == .success else { return }
+        guard AXUIElementPerformAction(window, kAXRaiseAction as CFString) == .success else { return false }
         AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
         if AXUIElementSetAttributeValue(element, kAXFrontmostAttribute as CFString, kCFBooleanTrue) != .success {
-            application.activate()
+            return application.isActive || application.activate()
         }
+        return true
+    }
+
+    func openFromProfileMenu(_ directory: String) -> AXError? {
+        guard let profile = profiles.first(where: { $0.directory == directory }) else { return nil }
+        let items = profileMenuItems()
+        let names = items.map(\.name)
+        let expected = Set(profiles.map(\.displayName))
+        let actual = Set(names)
+        guard expected.count == profiles.count, names.count == profiles.count, actual.count == names.count else { return nil }
+        let alias = Self.profileMenuAlias(names, profiles: profiles)
+        guard actual == expected || alias != nil else { return nil }
+        let title = alias.flatMap { $0.directory == directory ? $0.name : nil } ?? profile.displayName
+        guard let item = items.first(where: { $0.name == title }),
+              (attribute(item.element, kAXEnabledAttribute) as Bool?) == true else { return nil }
+        return AXUIElementPerformAction(item.element, kAXPressAction as CFString)
     }
 
     private func observe(_ notification: String, on element: AXUIElement) -> Bool {
@@ -155,16 +196,24 @@ final class EdgeWindows {
         return children(of: element).flatMap { toolbars(in: $0, depth: depth + 1) }
     }
 
-    private func profileMenuAlias() -> (name: String, directory: String)? {
+    private func profileMenuItems() -> [(name: String, element: AXUIElement)] {
         guard let menuBar: AXUIElement = attribute(element, kAXMenuBarAttribute),
               let item = children(of: menuBar).first(where: {
                   ["个人资料", "個人資料", "設定檔", "Profiles"].contains(attribute($0, kAXTitleAttribute) ?? "")
               }),
-              let menu = children(of: item).first else { return nil }
+              let menu = children(of: item).first else { return [] }
 
+        var profiles: [(name: String, element: AXUIElement)] = []
         // 第一个分隔符以上是资料，以下是管理命令。
-        let names = children(of: menu).map { attribute($0, kAXTitleAttribute) as String? ?? "" }
-            .prefix(while: { !$0.isEmpty })
+        for item in children(of: menu) {
+            guard (attribute(item, kAXRoleAttribute) as String?) == kAXMenuItemRole,
+                  let name: String = attribute(item, kAXTitleAttribute), !name.isEmpty else { break }
+            profiles.append((name, item))
+        }
+        return profiles
+    }
+
+    static func profileMenuAlias(_ names: [String], profiles: [EdgeProfile]) -> (name: String, directory: String)? {
         guard Set(names).count == profiles.count, names.count == profiles.count else { return nil }
         let profileNames = Set(profiles.map(\.displayName))
         let aliases = Set(names).subtracting(profileNames)
