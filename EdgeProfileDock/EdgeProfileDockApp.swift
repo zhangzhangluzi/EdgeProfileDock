@@ -1,5 +1,16 @@
 import AppKit
+import Carbon
 import OSLog
+import ServiceManagement
+
+enum LoginLaunch {
+    static func startsInBackground(event: NSAppleEventDescriptor?, loginEnabled: Bool) -> Bool {
+        guard let event else { return loginEnabled }
+        return event.eventClass == AEEventClass(kCoreEventClass)
+            && event.eventID == AEEventID(kAEOpenApplication)
+            && event.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))?.enumCodeValue == AEKeyword(keyAELaunchedAsLogInItem)
+    }
+}
 
 @main
 @MainActor
@@ -34,7 +45,10 @@ final class EdgeProfileDockApp: NSObject, NSApplicationDelegate, NSMenuDelegate,
         item.menu = menu
         statusItem = item
 
-        showManager()
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        if !LoginLaunch.startsInBackground(event: event, loginEnabled: SMAppService.mainApp.status == .enabled) {
+            showManager()
+        }
     }
 
     private static func menuBarIcon() -> NSImage {
@@ -71,6 +85,7 @@ final class EdgeProfileDockApp: NSObject, NSApplicationDelegate, NSMenuDelegate,
 
     func applicationDidBecomeActive(_ notification: Notification) {
         model.windowMonitor.checkAccessibility()
+        model.refreshLoginItemStatus()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }

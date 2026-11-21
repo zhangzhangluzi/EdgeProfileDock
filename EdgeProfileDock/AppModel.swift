@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import Foundation
+import ServiceManagement
 
 @MainActor
 final class AppModel: ObservableObject {
@@ -13,6 +14,7 @@ final class AppModel: ObservableObject {
     @Published var selectedLauncherIDs: Set<String> = []
     @Published var statusMessage: String?
     @Published var errorMessage: String?
+    @Published private(set) var loginItemStatus = SMAppService.mainApp.status
     private var didBootstrap = false
 
     func bootstrap() {
@@ -22,6 +24,30 @@ final class AppModel: ObservableObject {
         }
         didBootstrap = true
         refresh()
+    }
+
+    func refreshLoginItemStatus() {
+        let status = SMAppService.mainApp.status
+        if loginItemStatus != status { loginItemStatus = status }
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        let service = SMAppService.mainApp
+        do {
+            if enabled && service.status != .enabled && service.status != .requiresApproval {
+                try service.register()
+            } else if !enabled && (service.status == .enabled || service.status == .requiresApproval) {
+                try service.unregister()
+            }
+            errorMessage = nil
+        } catch {
+            errorMessage = "无法更新登录启动设置：\(error.localizedDescription)"
+        }
+        refreshLoginItemStatus()
+        if enabled && loginItemStatus == .requiresApproval {
+            errorMessage = "请在系统设置的「登录项与扩展」中允许 EdgeProfileDock。"
+            SMAppService.openSystemSettingsLoginItems()
+        }
     }
 
     func refresh() {

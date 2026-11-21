@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Security
+import ServiceManagement
 
 enum UninstallMode {
     case keepLaunchers
@@ -127,6 +128,10 @@ enum UninstallService {
     }
 
     static func performUninstall(mode: UninstallMode) throws {
+        let loginItem = SMAppService.mainApp
+        if loginItem.status == .enabled || loginItem.status == .requiresApproval {
+            try loginItem.unregister()
+        }
         if mode == .removeEverything {
             try LauncherBuilder.deleteAllOwnedLaunchers()
         }

@@ -1,4 +1,5 @@
 import Foundation
+import Carbon
 import XCTest
 @testable import EdgeProfileDock
 
@@ -92,6 +93,18 @@ final class EdgeProfileDockTests: XCTestCase {
         XCTAssertEqual(alias?.directory, "Profile 1")
         XCTAssertNil(EdgeWindows.profileMenuAlias(["别名一", "别名二"], profiles: profiles))
         XCTAssertNil(EdgeWindows.profileMenuAlias(["甲", "甲"], profiles: profiles))
+    }
+
+    func testLoginLaunchStaysInBackground() {
+        let event = NSAppleEventDescriptor(
+            eventClass: AEEventClass(kCoreEventClass), eventID: AEEventID(kAEOpenApplication),
+            targetDescriptor: nil, returnID: AEReturnID(kAutoGenerateReturnID), transactionID: AETransactionID(kAnyTransactionID)
+        )
+        XCTAssertFalse(LoginLaunch.startsInBackground(event: event, loginEnabled: true))
+        event.setParam(NSAppleEventDescriptor(enumCode: AEKeyword(keyAELaunchedAsLogInItem)), forKeyword: AEKeyword(keyAEPropData))
+        XCTAssertTrue(LoginLaunch.startsInBackground(event: event, loginEnabled: true))
+        XCTAssertTrue(LoginLaunch.startsInBackground(event: nil, loginEnabled: true))
+        XCTAssertFalse(LoginLaunch.startsInBackground(event: nil, loginEnabled: false))
     }
 
     private func signedFixture(version: String, name: String) throws -> URL {

@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import ServiceManagement
 
 @MainActor
 final class ManagerViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
@@ -7,6 +8,7 @@ final class ManagerViewController: NSViewController, NSTableViewDataSource, NSTa
     private var observation: AnyCancellable?
     private let browserPicker = NSSegmentedControl()
     private let monitorSwitch = NSSwitch()
+    private let loginCheckbox = NSButton(checkboxWithTitle: "登录时启动", target: nil, action: nil)
     private let monitorStatus = NSTextField(labelWithString: "")
     private let permissionStatus = NSTextField(labelWithString: "")
     private let profileTable = NSTableView()
@@ -61,6 +63,9 @@ final class ManagerViewController: NSViewController, NSTableViewDataSource, NSTa
         let title = NSTextField(labelWithString: "EdgeProfileDock")
         title.font = .systemFont(ofSize: 20, weight: .semibold)
         let description = detail("关闭窗口后，可从菜单栏重新打开。")
+        loginCheckbox.target = self
+        loginCheckbox.action = #selector(toggleLaunchAtLogin)
+        loginCheckbox.setAccessibilityLabel("登录时启动")
         var actions: [(String, Selector)] = []
         if !UninstallService.isRunningFromApplications() {
             actions.append(("移到应用程序…", #selector(moveToApplications)))
@@ -68,7 +73,7 @@ final class ManagerViewController: NSViewController, NSTableViewDataSource, NSTa
         actions.append(("卸载 EdgeProfileDock…", #selector(showUninstall)))
         return stack(.horizontal, spacing: 12,
                      [icon, stack(.vertical, spacing: 3, [title, description], fillWidth: false),
-                      spacer(), popup("更多", actions: actions)])
+                      spacer(), loginCheckbox, popup("更多", actions: actions)])
     }
 
     private func makeMonitor() -> NSView {
@@ -127,6 +132,9 @@ final class ManagerViewController: NSViewController, NSTableViewDataSource, NSTa
 
     private func syncView() {
         let monitor = model.windowMonitor
+        loginCheckbox.title = model.loginItemStatus == .requiresApproval ? "登录启动待允许" : "登录时启动"
+        loginCheckbox.state = model.loginItemStatus == .enabled || model.loginItemStatus == .requiresApproval ? .on : .off
+        loginCheckbox.toolTip = model.loginItemStatus == .requiresApproval ? "请在系统设置中允许登录启动" : "登录后在菜单栏启动"
         monitorStatus.stringValue = monitor.activityDescription
         monitorSwitch.state = monitor.isEnabled ? .on : .off
         permissionStatus.stringValue = monitor.hasAccessibility ? "辅助功能已授权" : "辅助功能待授权"
@@ -351,6 +359,7 @@ final class ManagerViewController: NSViewController, NSTableViewDataSource, NSTa
 
     @objc private func refresh() { model.refresh() }
     @objc private func toggleMonitoring() { model.windowMonitor.isEnabled = monitorSwitch.state == .on }
+    @objc private func toggleLaunchAtLogin() { model.setLaunchAtLogin(loginCheckbox.state == .on) }
     @objc private func checkAccessibility() { model.windowMonitor.checkAccessibility() }
     @objc private func requestAccessibility() { model.windowMonitor.requestAccessibility() }
     @objc private func openAccessibilitySettings() { model.windowMonitor.openAccessibilitySettings() }
