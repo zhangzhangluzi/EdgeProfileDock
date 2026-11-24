@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+target_volume="${3:?缺少目标卷}"
+existing_app="${target_volume%/}/Applications/EdgeProfileDock.app"
+requirement_file="$(dirname "$0")/signature-requirement.txt"
+
+if [[ ! -s "$requirement_file" ]]; then
+    echo "安装包缺少应用签名要求。" >&2
+    exit 1
+fi
+
+if [[ -L "$existing_app" ]]; then
+    echo "现有应用是符号链接，请先检查其安装位置。" >&2
+    exit 1
+fi
+
+if [[ -e "$existing_app" ]]; then
+    requirement="$(cat "$requirement_file")"
+    if ! /usr/bin/codesign --verify --strict -R="$requirement" "$existing_app"; then
+        echo "现有 EdgeProfileDock 与安装包的签名不同，已停止安装。" >&2
+        exit 1
+    fi
+fi

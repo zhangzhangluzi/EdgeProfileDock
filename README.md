@@ -8,11 +8,11 @@
 
 需要采用 Apple 芯片的 Mac 和 macOS 14 或更新版本。Microsoft Edge 或 Edge Beta 需安装在系统「应用程序」目录（`/Applications`）。
 
-1. 从 [Releases](https://github.com/zhangzhangluzi/EdgeProfileDock/releases) 下载对应版本的 `EdgeProfileDock-版本.zip`，解压并将 `EdgeProfileDock.app` 拖到「应用程序」。
-2. 打开 EdgeProfileDock。发行包使用固定签名，尚未经过 Apple 公证。若 macOS 提示无法验证开发者，确认下载来源和校验值后，可按系统提示在「系统设置 → 隐私与安全性」选择「仍要打开」。[Apple 安装说明](https://support.apple.com/en-us/102445)
-3. 如需校验下载文件，将同一发布页的 `SHA256SUMS` 放到 ZIP 旁边，在该目录运行 `shasum -a 256 -c SHA256SUMS`。
+1. 从 [Releases](https://github.com/zhangzhangluzi/EdgeProfileDock/releases) 下载 `EdgeProfileDock-版本.pkg` 和对应的 `.pkg.sha256`。在下载目录运行 `shasum -a 256 -c EdgeProfileDock-*.pkg.sha256` 校验。
+2. 双击 `.pkg` 并按安装向导操作，应用会安装到「应用程序」文件夹。也可以下载 ZIP，解压后将应用拖入「应用程序」。
+3. 发行版安装包尚未使用 Apple 开发者 ID 签名和公证。若 macOS 提示无法验证开发者，确认下载来源和校验值后，可按系统提示在「系统设置 → 隐私与安全性」选择「仍要打开」。[Apple 安装说明](https://support.apple.com/en-us/102445)
 
-更新时，先从菜单栏退出 EdgeProfileDock，再用新版替换「应用程序」里的旧版。来自同一签名的升级可沿用辅助功能授权。首次安装或从不同签名来源切换时，在系统设置中为当前安装的应用授权。
+更新时，安装向导会要求先退出正在运行的 EdgeProfileDock，并检查已安装应用与安装包的签名是否一致。来自同一签名的升级可沿用辅助功能授权。首次安装或从不同签名来源切换时，在系统设置中为当前安装的应用授权。
 
 ## 创建和切换资料
 
@@ -61,9 +61,9 @@
 ./scripts/build.sh
 ```
 
-脚本在临时目录编译和签名，结束时清理编译缓存。产物是 `build/EdgeProfileDock.app` 和 `build/EdgeProfileDock-版本.zip`。运行 `./scripts/smoke_test.sh` 可检查应用签名、内嵌启动器和本机 Edge 资料读取。
+脚本在临时目录编译和签名，结束时清理编译缓存。产物包括 `build/EdgeProfileDock.app`、ZIP、PKG 及 PKG 的校验文件。也可以运行 `./scripts/build_installer.sh`，为已构建的应用单独打包。运行 `./scripts/smoke_test.sh` 可检查应用签名、内嵌启动器和本机 Edge 资料读取。
 
-运行 `./scripts/test.sh` 可检查同名资料、窗口资料别名、启动重试和安装签名。测试使用临时目录，结束后自动清理。
+运行 `./scripts/test.sh` 可检查同名资料、窗口资料别名、启动重试和安装签名。运行 `./scripts/test_installer.sh` 可检查安装包内容和升级时的签名保护。测试使用临时目录，结束后自动清理。
 
 首次构建会下载并校验签名工具，生成本机固定签名。签名文件保存在 `~/Library/Application Support/EdgeProfileDock Signing/identity.p12`，口令由登录钥匙串保存。后续使用同一签名构建的版本可沿用本机授权。
 

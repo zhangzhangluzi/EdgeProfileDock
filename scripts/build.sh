@@ -56,7 +56,11 @@ mv "$STAGED_APP" "$APP_DIR"
 mv "$PACKAGE_STAGE/$APP_NAME.zip" "$ZIP_PATH"
 mv "$STAGED_STUB" "$STUB_OUT"
 
+echo "==> build installer"
+bash "$ROOT/scripts/build_installer.sh" "$APP_DIR" "$BUILD_DIR/$APP_NAME-$VERSION.pkg"
+
 echo "==> done"
 echo "Stub: $STUB_OUT"
 echo "App:  $APP_DIR"
 echo "Zip:  $ZIP_PATH"
+echo "Pkg:  $BUILD_DIR/$APP_NAME-$VERSION.pkg"
